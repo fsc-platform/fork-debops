@@ -35,11 +35,12 @@
 - name: Set profile {{ item.name + " to " + item.state }}
   ansible.builtin.shell: set -o nounset -o pipefail -o errexit &&
          aa-{{ item.state }} {{ ("/etc/apparmor.d/" + item.name) | quote }}
-            > /dev/null 2>&1 &&
+            > /dev/null &&
          aa-status --json
   args:
     executable: bash
   register: apparmor__register_new_status
-  changed_when: apparmor__register_new_status.stdout != apparmor__register_old_status.stdout
+  changed_when: apparmor__register_new_status.stdout != apparmor__register_old_status.stdout and apparmor__register_new_status.rc == 0
+  failed_when: apparmor__register_new_status.rc != 0 and "Profile doesn't exist" not in apparmor__register_new_status.stderr
   when: item.state != "ignore"
   tags: [ 'role::apparmor:profiles' ]
